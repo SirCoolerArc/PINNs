@@ -1,0 +1,12 @@
+# Core dependencies for the Week 4 Navier-Stokes PINN.
+#
+# Install the CUDA build of PyTorch from the official index first, e.g. on Windows:
+#   pip install torch==2.6.0+cu124 --index-url https://download.pytorch.org/whl/cu124
+# The remaining packages install from PyPI as usual.
+
+torch==2.6.0+cu124
+numpy==2.5.0
+scipy==1.18.0
+matplotlib==3.11.0
+tqdm==4.68.3
+jupyter==1.1.1

@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large raw datasets
+*.mat
+*.npz
+*.h5
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
