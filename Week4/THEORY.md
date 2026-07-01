@@ -68,10 +68,9 @@ I verify this numerically: the measured divergence $|u_x + v_y|$ sits around $10
 i.e. floating-point round-off. This removes one loss term, which is a real stability win:
 the optimiser has one fewer competing objective to balance.
 
-Concretely the network is $\mathcal{N}_\theta:(x, y, t) \mapsto (\psi, p)$, an MLP with
-`tanh` activations. All the derivatives above — $\psi_x, \psi_y$, then $u_t, u_x, u_{xx},
-\dots$ — are computed with `torch.autograd.grad(..., create_graph=True)`, which keeps the
-graph so second derivatives are available.
+Concretely the network is $\mathcal{N}_\theta : (x, y, t) \mapsto (\psi, p)$, an MLP with
+`tanh` activations. All the derivatives above — first $\psi_x, \psi_y$, then $u_t, u_x, u_{xx}$ and so on — are computed with `torch.autograd.grad(..., create_graph=True)`, which
+keeps the graph so second derivatives are available.
 
 ## 4. Phase 1 — forward validation on the Taylor–Green vortex
 
@@ -79,7 +78,7 @@ Before solving an unknown flow I validate the residual code on one whose exact a
 know. The **Taylor–Green vortex** is an analytical solution of these equations on
 $[0, 2\pi]^2$ with periodic boundaries:
 
-$$u = -\cos x \sin y \; e^{-2\nu t}, \quad v = \sin x \cos y \; e^{-2\nu t}, \quad p = -\tfrac14 (\cos 2x + \cos 2y)\, e^{-4\nu t}$$
+$$u = -\cos(x)\sin(y)\, e^{-2\nu t}, \quad v = \sin(x)\cos(y)\, e^{-2\nu t}, \quad p = -\tfrac14\left(\cos(2x) + \cos(2y)\right) e^{-4\nu t}$$
 
 The flow is a grid of counter-rotating vortices whose amplitude decays as $e^{-2\nu t}$ —
 viscosity slowly dissipates the energy.
