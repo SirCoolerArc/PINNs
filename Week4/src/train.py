@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 
 from .config import Config
-from . import data, pde
+from . import data, inverse, pde
 
 
 def _requires_grad(*tensors):
@@ -125,3 +125,78 @@ def train(model, cfg: Config, device, generator, log_fn=print):
     log_fn(f"L-BFGS stage done in {time.time() - t0:.1f}s ({state['it']} evals)")
 
     return history
+
+
+def make_inverse_data(cfg: Config, n_meas, noise, device, generator):
+    """Sample the sparse noisy measurements and the collocation points."""
+    xm, ym, tm, um, vm = data.sample_measurements(n_meas, noise, cfg, device, generator)
+    xm, ym, tm = _requires_grad(xm, ym, tm)
+    meas = (xm, ym, tm, um, vm)
+
+    xc, yc, tc = data.sample_collocation(cfg, device, generator)
+    coll = tuple(_requires_grad(xc, yc, tc))
+    return meas, coll
+
+
+def train_inverse(model, nu_module, cfg: Config, meas, coll, log_fn=print):
+    """Adam then L-BFGS on the inverse loss; jointly fits weights and nu.
+
+    Returns (history, nu_trajectory) where nu_trajectory is nu after every step.
+    """
+    params = list(model.parameters()) + list(nu_module.parameters())
+    history = []
+    nu_traj = []
+
+    # --- Stage 1: Adam ---
+    optimizer = torch.optim.Adam(params, lr=cfg.adam_lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, factor=cfg.lr_decay_factor, patience=cfg.lr_decay_patience
+    )
+    t0 = time.time()
+    for it in range(1, cfg.adam_iters + 1):
+        optimizer.zero_grad()
+        loss, parts = inverse.inverse_loss(model, nu_module, meas, coll)
+        loss.backward()
+        optimizer.step()
+        scheduler.step(parts["total"])
+        history.append(parts)
+        nu_traj.append(parts["nu"])
+        if it % cfg.log_every == 0 or it == 1:
+            lr = optimizer.param_groups[0]["lr"]
+            log_fn(
+                f"[adam {it:>6}/{cfg.adam_iters}] total={parts['total']:.3e} "
+                f"data={parts['data']:.3e} pde={parts['pde']:.3e} "
+                f"nu={parts['nu']:.5f} lr={lr:.1e}"
+            )
+    log_fn(f"Adam stage done in {time.time() - t0:.1f}s")
+
+    # --- Stage 2: L-BFGS full-batch fine-tune ---
+    optimizer = torch.optim.LBFGS(
+        params,
+        max_iter=cfg.lbfgs_iters,
+        history_size=50,
+        line_search_fn="strong_wolfe",
+        tolerance_grad=1e-9,
+        tolerance_change=1e-12,
+    )
+    state = {"it": 0}
+
+    def closure():
+        optimizer.zero_grad()
+        loss, parts = inverse.inverse_loss(model, nu_module, meas, coll)
+        loss.backward()
+        state["it"] += 1
+        history.append(parts)
+        nu_traj.append(parts["nu"])
+        if state["it"] % cfg.log_every == 0 or state["it"] == 1:
+            log_fn(
+                f"[lbfgs {state['it']:>6}] total={parts['total']:.3e} "
+                f"data={parts['data']:.3e} pde={parts['pde']:.3e} nu={parts['nu']:.5f}"
+            )
+        return loss
+
+    t0 = time.time()
+    optimizer.step(closure)
+    log_fn(f"L-BFGS stage done in {time.time() - t0:.1f}s ({state['it']} evals)")
+
+    return history, nu_traj

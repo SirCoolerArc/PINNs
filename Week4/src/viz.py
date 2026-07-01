@@ -40,11 +40,25 @@ def plot_field_comparison(x, y, pred, true, shape, title, path: Path, cmap="RdBu
     plt.close(fig)
 
 
-def plot_loss_curve(history, path: Path):
-    """Total / PDE / IC / BC loss versus optimizer iteration (log scale)."""
+def plot_vorticity(x, y, pred, true, shape, path: Path, t=None):
+    """Predicted vs true vorticity (omega = v_x - u_y) with the error map."""
+    title = "vorticity" if t is None else f"vorticity (t={t:g})"
+    plot_field_comparison(x, y, pred, true, shape, title, path, cmap="RdBu_r")
+
+
+def plot_loss_curve(history, path: Path, keys=None):
+    """Loss components versus optimizer iteration (log scale).
+
+    `keys` selects which entries to plot; by default every non-parameter loss
+    term present in the history is shown, so this works for both the forward
+    (total/pde/ic/bc) and inverse (total/data/pde) runs.
+    """
+    if keys is None:
+        candidates = ("total", "data", "pde", "ic", "bc")
+        keys = [k for k in candidates if k in history[0]]
     its = np.arange(1, len(history) + 1)
     fig, ax = plt.subplots(figsize=(7, 4.5), constrained_layout=True)
-    for key in ("total", "pde", "ic", "bc"):
+    for key in keys:
         ax.semilogy(its, [h[key] for h in history], label=key)
     ax.set_xlabel("iteration")
     ax.set_ylabel("loss")

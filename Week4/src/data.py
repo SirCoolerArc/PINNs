@@ -83,6 +83,24 @@ def sample_boundary(cfg: Config, device, generator):
     return left, right, bottom, top
 
 
+def sample_measurements(n: int, noise: float, cfg: Config, device, generator):
+    """Sparse, noisy velocity measurements for the inverse problem.
+
+    Draws `n` fully scattered (x, y, t) points across the whole domain and all
+    time slices in [t_min, t_max], evaluates the exact TGV velocity, and adds
+    Gaussian noise scaled to `noise` times the per-component signal std. Pressure
+    is never produced here -- it stays hidden and is recovered from physics.
+    """
+    x = _uniform(n, cfg.x_min, cfg.x_max, device, generator)
+    y = _uniform(n, cfg.y_min, cfg.y_max, device, generator)
+    t = _uniform(n, cfg.t_min, cfg.t_max, device, generator)
+    u, v = tgv_velocity(x, y, t, cfg.nu)
+
+    u_noisy = u + noise * u.std() * torch.randn(u.shape, device=device, generator=generator)
+    v_noisy = v + noise * v.std() * torch.randn(v.shape, device=device, generator=generator)
+    return x, y, t, u_noisy, v_noisy
+
+
 def grid_eval_points(cfg: Config, t: float, n: int, device):
     """A dense regular (x, y) grid at a fixed time, for evaluation / plotting.
 
