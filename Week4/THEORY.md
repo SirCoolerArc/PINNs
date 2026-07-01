@@ -79,11 +79,7 @@ Before solving an unknown flow I validate the residual code on one whose exact a
 know. The **Taylor–Green vortex** is an analytical solution of these equations on
 $[0, 2\pi]^2$ with periodic boundaries:
 
-$$
-u = -\cos x \sin y \; e^{-2\nu t}, \quad
-v = \sin x \cos y \; e^{-2\nu t}, \quad
-p = -\tfrac14 (\cos 2x + \cos 2y)\, e^{-4\nu t}
-$$
+$$u = -\cos x \sin y \; e^{-2\nu t}, \quad v = \sin x \cos y \; e^{-2\nu t}, \quad p = -\tfrac14 (\cos 2x + \cos 2y)\, e^{-4\nu t}$$
 
 The flow is a grid of counter-rotating vortices whose amplitude decays as $e^{-2\nu t}$ —
 viscosity slowly dissipates the energy.
@@ -91,20 +87,11 @@ viscosity slowly dissipates the energy.
 For the forward solve I train on **physics alone**, with three loss terms and *no* interior
 velocity labels:
 
-$$
-\mathcal{L}_{\text{fwd}}
-= \underbrace{\mathcal{L}_{\text{IC}}}_{\text{initial condition at }t=0}
-+ \underbrace{\mathcal{L}_{\text{BC}}}_{\text{periodicity on }[0,2\pi]^2}
-+ \underbrace{\mathcal{L}_{\text{PDE}}}_{\text{momentum residual}}
-$$
+$$\mathcal{L}_{\text{fwd}} = \underbrace{\mathcal{L}_{\text{IC}}}_{\text{initial condition at } t=0} + \underbrace{\mathcal{L}_{\text{BC}}}_{\text{periodicity on } [0,2\pi]^2} + \underbrace{\mathcal{L}_{\text{PDE}}}_{\text{momentum residual}}$$
 
 where the PDE term is the mean squared momentum residual at scattered *collocation* points:
 
-$$
-\mathcal{L}_{\text{PDE}} = \frac{1}{N}\sum \left( f_u^2 + f_v^2 \right),
-\quad
-f_u = u_t + u u_x + v u_y + p_x - \nu(u_{xx}+u_{yy})
-$$
+$$\mathcal{L}_{\text{PDE}} = \frac{1}{N}\sum \left( f_u^2 + f_v^2 \right), \quad f_u = u_t + u u_x + v u_y + p_x - \nu(u_{xx}+u_{yy})$$
 
 and $f_v$ analogously. If the trained field matches the analytical solution to low relative
 $L^2$ error (it does: sub-1% on velocity), the engine is trustworthy. Notice pressure never
@@ -126,7 +113,7 @@ value of $\nu$ (treated as unknown).
 1. the network weights $\theta$ (hence the full fields $u, v, p$ everywhere), and
 2. the viscosity $\nu$, a single trainable scalar.
 
-To keep $\nu > 0$ I parameterise it through a softplus, $\nu = \operatorname{softplus}(w)$,
+To keep $\nu > 0$ I parameterise it through a softplus, $\nu = \mathrm{softplus}(w)$,
 so the optimiser sees an unconstrained variable while the physical value stays positive. I
 initialise it deliberately *wrong* (5× too large) so that recovering the truth is a genuine
 result, not a lucky guess.
@@ -134,11 +121,7 @@ result, not a lucky guess.
 **Loss.** Only two terms — a data misfit on the noisy velocity, and the same PDE residual as
 before (now with the *learnable* $\nu$ inside it):
 
-$$
-\mathcal{L}_{\text{inv}}
-= \underbrace{\frac{1}{N_d}\sum \big(|u - u^{\text{meas}}|^2 + |v - v^{\text{meas}}|^2\big)}_{\text{data misfit}}
-+ \underbrace{\frac{1}{N_c}\sum \big(f_u^2 + f_v^2\big)}_{\text{PDE residual}}
-$$
+$$\mathcal{L}_{\text{inv}} = \underbrace{\frac{1}{N_d}\sum \big(|u - u^{\text{meas}}|^2 + |v - v^{\text{meas}}|^2\big)}_{\text{data misfit}} + \underbrace{\frac{1}{N_c}\sum \big(f_u^2 + f_v^2\big)}_{\text{PDE residual}}$$
 
 There is no pressure term and no boundary condition. The data pins down the velocity where
 it is measured; the PDE residual then propagates that information everywhere else and, in
