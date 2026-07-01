@@ -98,8 +98,8 @@ Week4/
 │   └── 02_inverse_reconstruction.ipynb
 ├── run_forward.py      # reproduces the forward validation
 ├── run_inverse.py      # reproduces the inverse reconstruction
-├── results/            # figures + metrics.json
-└── archive/            # earlier Newton's-cooling PINN, kept for history
+├── THEORY.md           # the maths: equations, stream function, inverse setup
+└── results/            # figures + metrics.json
 ```
 
 ## Reproducing
