@@ -68,9 +68,14 @@ I verify this numerically: the measured divergence $|u_x + v_y|$ sits around $10
 i.e. floating-point round-off. This removes one loss term, which is a real stability win:
 the optimiser has one fewer competing objective to balance.
 
-Concretely the network is $\mathcal{N}_\theta : (x, y, t) \mapsto (\psi, p)$, an MLP with
-`tanh` activations. All the derivatives above — first $\psi_x, \psi_y$, then $u_t, u_x, u_{xx}$ and so on — are computed with `torch.autograd.grad(..., create_graph=True)`, which
-keeps the graph so second derivatives are available.
+Concretely the network is an MLP with `tanh` activations that maps
+
+$$\mathcal{N}_\theta : (x, y, t) \mapsto (\psi, p).$$
+
+All the derivatives above — first $\psi_x$ and $\psi_y$, then the momentum-equation terms
+$u_t$, $u_x$, $u_{xx}$ and so on — are computed with
+`torch.autograd.grad(..., create_graph=True)`, which keeps the graph so that second
+derivatives are available.
 
 ## 4. Phase 1 — forward validation on the Taylor–Green vortex
 
